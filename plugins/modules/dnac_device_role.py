@@ -174,7 +174,7 @@ def main():
 
     module = AnsibleModule(
         argument_spec=module_args,
-        supports_check_mode=False
+        supports_check_mode=True
     )
 
     # Instantiate the DnaCenter class object
@@ -191,9 +191,13 @@ def main():
     device_id = device_results['response'][0]['id']
 
     if current_device_role != module.params['device_role']:
-        dnac.api_path = 'api/v1/network-device/brief'
-        payload = {'id': device_id, 'role': module.params['device_role'], 'roleSource': 'MANUAL'}
-        dnac.update_obj(payload)
+        if dnac.module.check_mode:
+            dnac.result['changed'] = True
+            dnac.module.exit_json(msg='In check_mode.  Changes would be required.', **dnac.result)
+        else:
+            dnac.api_path = 'api/v1/network-device/brief'
+            payload = {'id': device_id, 'role': module.params['device_role'], 'roleSource': 'MANUAL'}
+            dnac.update_obj(payload)
 
     else:
         result['changed'] = False
